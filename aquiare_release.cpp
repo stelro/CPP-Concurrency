@@ -23,11 +23,13 @@ void aquire_release_assert_can_fire() {
     });
 
     std::thread read_x_then_y([&]() {
-        // x and y are written by different threads, and read by different threads 
-        // the ordering from the release to the acquire in each case, has no effect
-        // in the operations in the other threads
-        // e.g the release operation in the write_x thread, has no ordering effect
-        // with the acquire operation in the read_x_then_y thread
+        // The assertion below still can be fired. The reason is that the order of execution 
+        // doesn't preserved in this example.
+        // if thread (read_x_then_y) will execute first, the x.load should synchronize with the 
+        // x.store, that is, the acquire HAVE to synchronize with the RELEASE on the same variable,
+        // but the y.load() doesn't guarantee to synchronize with the write_y thread, thus it can
+        // still read false ( see the initial value ). write_y may have not yet executed yet, and
+        // it's in different thread
         while (!x.load(std::memory_order_acquire)); // while x is false, then spin
         if (y.load(std::memory_order_acquire)) // if y is true then increment the z
             ++z;
@@ -78,8 +80,8 @@ void aquire_release_assert_cannot_fire() {
 
 int main() {
 
-    // aquire_release_assert_can_fire();
-    aquire_release_assert_cannot_fire();
+    aquire_release_assert_can_fire();
+    // aquire_release_assert_cannot_fire();
 
     return 0;
 }
